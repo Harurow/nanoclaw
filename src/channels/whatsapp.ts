@@ -420,4 +420,10 @@ export class WhatsAppChannel implements Channel {
   }
 }
 
-registerChannel('whatsapp', (opts: ChannelOpts) => new WhatsAppChannel(opts));
+registerChannel('whatsapp', (opts: ChannelOpts) => {
+  // Skip if no auth credentials exist yet
+  const authDir = path.join(STORE_DIR, 'auth');
+  const credsFile = path.join(authDir, 'creds.json');
+  if (!fs.existsSync(credsFile)) return null;
+  return new WhatsAppChannel(opts);
+});

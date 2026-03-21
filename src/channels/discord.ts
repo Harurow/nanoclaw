@@ -179,6 +179,34 @@ export class DiscordChannel implements Channel {
         }
       }
 
+      // Add a reaction to acknowledge the message
+      try {
+        const hasImage =
+          message.attachments.size > 0 &&
+          [...message.attachments.values()].some((a) =>
+            a.contentType?.startsWith('image/'),
+          );
+        const lowerContent = content.toLowerCase();
+        let emoji = '👀';
+        if (hasImage) emoji = '🔍';
+        else if (
+          /remind|schedule|every|cron|task|タスク|リマインド/.test(lowerContent)
+        )
+          emoji = '⏰';
+        else if (/search|find|lookup|調べ|検索/.test(lowerContent))
+          emoji = '🔎';
+        else if (/thank|thanks|ありがとう/.test(lowerContent)) emoji = '😊';
+        else if (
+          /help|how|what|why|when|where|教えて|方法|何|なぜ|どこ/.test(
+            lowerContent,
+          )
+        )
+          emoji = '🤔';
+        await message.react(emoji);
+      } catch {
+        // Reaction may fail if bot lacks permissions — ignore silently
+      }
+
       // Deliver message — startMessageLoop() will pick it up
       this.opts.onMessage(chatJid, {
         id: msgId,
