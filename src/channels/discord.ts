@@ -1,3 +1,4 @@
+import fs from 'fs';
 import https from 'https';
 import path from 'path';
 import {
@@ -163,6 +164,21 @@ export class DiscordChannel implements Channel {
             } catch (err) {
               logger.warn({ err }, 'Discord image download/process failed');
               attachmentDescriptions.push(`[Image: ${att.name || 'image'}]`);
+            }
+          } else if (contentType === 'application/pdf') {
+            try {
+              const buf = await downloadBuffer(att.url);
+              const attachDir = path.join(groupDir, 'attachments');
+              fs.mkdirSync(attachDir, { recursive: true });
+              const filename = att.name || `doc-${Date.now()}.pdf`;
+              fs.writeFileSync(path.join(attachDir, filename), buf);
+              const sizeKB = Math.round(buf.length / 1024);
+              attachmentDescriptions.push(
+                `[PDF: attachments/${filename} (${sizeKB}KB)]\nUse: pdf-reader extract attachments/${filename}`,
+              );
+            } catch (err) {
+              logger.warn({ err }, 'Discord PDF download failed');
+              attachmentDescriptions.push(`[File: ${att.name || 'file.pdf'}]`);
             }
           } else if (contentType.startsWith('video/')) {
             attachmentDescriptions.push(`[Video: ${att.name || 'video'}]`);
