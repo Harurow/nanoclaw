@@ -223,6 +223,10 @@ function buildContainerArgs(
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
 
+  // Persist browser sessions (cookies, IndexedDB, cache) per group across runs.
+  // Using the group workspace so each group has isolated browser state.
+  args.push('-e', 'AGENT_BROWSER_PROFILE=/workspace/group/browser-profile');
+
   // Route API traffic through the credential proxy (containers never see real secrets)
   args.push(
     '-e',
