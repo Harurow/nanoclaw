@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     fonts-liberation \
     fonts-noto-color-emoji \
     fonts-noto-cjk \
+    locales \
     libgbm1 \
     libnss3 \
     libatk-bridge2.0-0 \
@@ -26,6 +27,11 @@ RUN apt-get update && apt-get install -y \
     git \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
+
+# Set up Japanese locale
+RUN sed -i 's/# ja_JP.UTF-8 UTF-8/ja_JP.UTF-8 UTF-8/' /etc/locale.gen && locale-gen
+ENV LANG=ja_JP.UTF-8
+ENV LC_ALL=ja_JP.UTF-8
 
 # Set Chromium path for agent-browser
 ENV AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium

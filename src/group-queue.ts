@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { DATA_DIR, MAX_CONCURRENT_CONTAINERS } from './config.js';
+import { stopContainer } from './container-runtime.js';
 import { logger } from './logger.js';
 
 interface QueuedTask {
@@ -180,6 +181,23 @@ export class GroupQueue {
   /**
    * Signal the active container to wind down by writing a close sentinel.
    */
+  /**
+   * Stop the running container for a group immediately.
+   * Returns true if a container was stopped, false if none was running.
+   */
+  stopGroup(groupJid: string): boolean {
+    const state = this.getGroup(groupJid);
+    if (!state.active || !state.containerName) return false;
+    const containerName = state.containerName;
+    logger.info(
+      { groupJid, containerName },
+      'Stopping container on user request',
+    );
+    state.process?.kill('SIGTERM');
+    stopContainer(containerName);
+    return true;
+  }
+
   closeStdin(groupJid: string): void {
     const state = this.getGroup(groupJid);
     if (!state.active || !state.groupFolder) return;

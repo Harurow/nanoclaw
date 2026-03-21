@@ -417,6 +417,18 @@ async function startMessageLoop(): Promise<void> {
             continue;
           }
 
+          // Check for stop/cancel command before anything else
+          const STOP_PATTERN = /^(中止|停止|キャンセル|cancel|stop|abort)\s*$/i;
+          const hasStopCommand = groupMessages.some((m) =>
+            STOP_PATTERN.test(m.content.trim()),
+          );
+          if (hasStopCommand) {
+            if (queue.stopGroup(chatJid)) {
+              await channel.sendMessage(chatJid, '処理を中止しました。');
+            }
+            continue;
+          }
+
           const isMainGroup = group.isMain === true;
           const needsTrigger = !isMainGroup && group.requiresTrigger !== false;
 
