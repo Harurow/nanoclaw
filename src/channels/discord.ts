@@ -1,3 +1,5 @@
+import https from 'https';
+import path from 'path';
 import {
   Client,
   Events,
@@ -6,8 +8,9 @@ import {
   TextChannel,
 } from 'discord.js';
 
-import { ASSISTANT_NAME, TRIGGER_PATTERN } from '../config.js';
+import { ASSISTANT_NAME, GROUPS_DIR, TRIGGER_PATTERN } from '../config.js';
 import { readEnvFile } from '../env.js';
+import { processImage } from '../image.js';
 import { logger } from '../logger.js';
 import { registerChannel, ChannelOpts } from './registry.js';
 import {
@@ -16,6 +19,19 @@ import {
   OnInboundMessage,
   RegisteredGroup,
 } from '../types.js';
+
+function downloadBuffer(url: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk: Buffer) => chunks.push(chunk));
+        res.on('end', () => resolve(Buffer.concat(chunks)));
+        res.on('error', reject);
+      })
+      .on('error', reject);
+  });
+}
 
 export interface DiscordChannelOpts {
   onMessage: OnInboundMessage;
@@ -92,29 +108,6 @@ export class DiscordChannel implements Channel {
         }
       }
 
-      // Handle attachments — store placeholders so the agent knows something was sent
-      if (message.attachments.size > 0) {
-        const attachmentDescriptions = [...message.attachments.values()].map(
-          (att) => {
-            const contentType = att.contentType || '';
-            if (contentType.startsWith('image/')) {
-              return `[Image: ${att.name || 'image'}]`;
-            } else if (contentType.startsWith('video/')) {
-              return `[Video: ${att.name || 'video'}]`;
-            } else if (contentType.startsWith('audio/')) {
-              return `[Audio: ${att.name || 'audio'}]`;
-            } else {
-              return `[File: ${att.name || 'file'}]`;
-            }
-          },
-        );
-        if (content) {
-          content = `${content}\n${attachmentDescriptions.join('\n')}`;
-        } else {
-          content = attachmentDescriptions.join('\n');
-        }
-      }
-
       // Handle reply context — include who the user is replying to
       if (message.reference?.messageId) {
         try {
@@ -149,6 +142,41 @@ export class DiscordChannel implements Channel {
           'Message from unregistered Discord channel',
         );
         return;
+      }
+
+      // Handle attachments — images are processed via Vision, others as placeholders
+      if (message.attachments.size > 0) {
+        const groupDir = path.join(GROUPS_DIR, group.folder);
+        const attachmentDescriptions: string[] = [];
+        for (const att of message.attachments.values()) {
+          const contentType = att.contentType || '';
+          if (contentType.startsWith('image/')) {
+            try {
+              const buf = await downloadBuffer(att.url);
+              const caption = att.description || '';
+              const result = await processImage(buf, groupDir, caption);
+              if (result) {
+                attachmentDescriptions.push(result.content);
+              } else {
+                attachmentDescriptions.push(`[Image: ${att.name || 'image'}]`);
+              }
+            } catch (err) {
+              logger.warn({ err }, 'Discord image download/process failed');
+              attachmentDescriptions.push(`[Image: ${att.name || 'image'}]`);
+            }
+          } else if (contentType.startsWith('video/')) {
+            attachmentDescriptions.push(`[Video: ${att.name || 'video'}]`);
+          } else if (contentType.startsWith('audio/')) {
+            attachmentDescriptions.push(`[Audio: ${att.name || 'audio'}]`);
+          } else {
+            attachmentDescriptions.push(`[File: ${att.name || 'file'}]`);
+          }
+        }
+        if (content) {
+          content = `${content}\n${attachmentDescriptions.join('\n')}`;
+        } else {
+          content = attachmentDescriptions.join('\n');
+        }
       }
 
       // Deliver message — startMessageLoop() will pick it up

@@ -5,13 +5,21 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 // Mock registry (registerChannel runs at import time)
 vi.mock('./registry.js', () => ({ registerChannel: vi.fn() }));
 
+// Mock image processing — returns null so attachment falls back to placeholder
+vi.mock('../image.js', () => ({
+  processImage: vi.fn().mockResolvedValue(null),
+  parseImageReferences: vi.fn().mockReturnValue([]),
+  isImageMessage: vi.fn().mockReturnValue(false),
+}));
+
 // Mock env reader (used by the factory, not needed in unit tests)
 vi.mock('../env.js', () => ({ readEnvFile: vi.fn(() => ({})) }));
 
 // Mock config
 vi.mock('../config.js', () => ({
-  ASSISTANT_NAME: 'Andy',
-  TRIGGER_PATTERN: /^@Andy\b/i,
+  ASSISTANT_NAME: 'FRIDAY',
+  TRIGGER_PATTERN: /^@FRIDAY\b/i,
+  GROUPS_DIR: '/tmp/test-groups',
 }));
 
 // Mock logger
@@ -114,7 +122,7 @@ function createTestOpts(
       'dc:1234567890123456': {
         name: 'Test Server #general',
         folder: 'test-server',
-        trigger: '@Andy',
+        trigger: '@FRIDAY',
         added_at: '2024-01-01T00:00:00.000Z',
       },
     })),
@@ -354,7 +362,7 @@ describe('DiscordChannel', () => {
           'dc:1234567890123456': {
             name: 'DM',
             folder: 'dm',
-            trigger: '@Andy',
+            trigger: '@FRIDAY',
             added_at: '2024-01-01T00:00:00.000Z',
           },
         })),
@@ -418,7 +426,7 @@ describe('DiscordChannel', () => {
       expect(opts.onMessage).toHaveBeenCalledWith(
         'dc:1234567890123456',
         expect.objectContaining({
-          content: '@Andy what time is it?',
+          content: '@FRIDAY what time is it?',
         }),
       );
     });
@@ -429,18 +437,18 @@ describe('DiscordChannel', () => {
       await channel.connect();
 
       const msg = createMessage({
-        content: '@Andy hello <@999888777>',
+        content: '@FRIDAY hello <@999888777>',
         mentionsBotId: true,
         guildName: 'Server',
       });
       await triggerMessage(msg);
 
-      // Should NOT prepend @Andy — already starts with trigger
+      // Should NOT prepend @FRIDAY — already starts with trigger
       // But the <@botId> should still be stripped
       expect(opts.onMessage).toHaveBeenCalledWith(
         'dc:1234567890123456',
         expect.objectContaining({
-          content: '@Andy hello',
+          content: '@FRIDAY hello',
         }),
       );
     });
@@ -479,7 +487,7 @@ describe('DiscordChannel', () => {
       expect(opts.onMessage).toHaveBeenCalledWith(
         'dc:1234567890123456',
         expect.objectContaining({
-          content: '@Andy check this',
+          content: '@FRIDAY check this',
         }),
       );
     });
