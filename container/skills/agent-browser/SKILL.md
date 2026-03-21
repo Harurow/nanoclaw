@@ -76,9 +76,9 @@ agent-browser get count ".item"   # Count matching elements
 ### Screenshots & PDF
 
 ```bash
-agent-browser screenshot          # Save to temp directory
-agent-browser screenshot path.png # Save to specific path
-agent-browser screenshot --full   # Full page
+agent-browser screenshot screenshots/page.png  # Save to screenshots/ directory
+agent-browser screenshot screenshots/page.png --full  # Full page
+agent-browser screenshot path.png              # Save to specific path
 agent-browser pdf output.pdf      # Save as PDF
 ```
 

@@ -180,12 +180,29 @@ export class DiscordChannel implements Channel {
               logger.warn({ err }, 'Discord PDF download failed');
               attachmentDescriptions.push(`[File: ${att.name || 'file.pdf'}]`);
             }
-          } else if (contentType.startsWith('video/')) {
-            attachmentDescriptions.push(`[Video: ${att.name || 'video'}]`);
-          } else if (contentType.startsWith('audio/')) {
-            attachmentDescriptions.push(`[Audio: ${att.name || 'audio'}]`);
           } else {
-            attachmentDescriptions.push(`[File: ${att.name || 'file'}]`);
+            // Download all other file types (video, audio, generic) to attachments/
+            try {
+              const buf = await downloadBuffer(att.url);
+              const attachDir = path.join(groupDir, 'attachments');
+              fs.mkdirSync(attachDir, { recursive: true });
+              const filename = att.name || `file-${Date.now()}`;
+              fs.writeFileSync(path.join(attachDir, filename), buf);
+              const sizeKB = Math.round(buf.length / 1024);
+              let label = 'File';
+              if (contentType.startsWith('video/')) label = 'Video';
+              else if (contentType.startsWith('audio/')) label = 'Audio';
+              attachmentDescriptions.push(
+                `[${label}: attachments/${filename} (${sizeKB}KB)]`,
+              );
+            } catch (err) {
+              logger.warn({ err }, 'Discord file download failed');
+              const filename = att.name || 'file';
+              let label = 'File';
+              if (contentType.startsWith('video/')) label = 'Video';
+              else if (contentType.startsWith('audio/')) label = 'Audio';
+              attachmentDescriptions.push(`[${label}: ${filename}]`);
+            }
           }
         }
         if (content) {
