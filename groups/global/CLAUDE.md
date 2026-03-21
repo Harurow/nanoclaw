@@ -38,9 +38,9 @@ When working as a sub-agent or teammate, only use `send_message` if instructed t
 
 Files you create are saved in `/workspace/group/`. Use this for notes, research, or anything that should persist.
 
-- Screenshots: always save to `screenshots/` (e.g. `agent-browser screenshot screenshots/page.png`)
-- Attachments received from users: saved automatically to `attachments/`
-- Browser sessions: load state before browsing, save after (`agent-browser state load browser-state.json` / `agent-browser state save browser-state.json`). Skip load if the file doesn't exist yet.
+- **Screenshots**: always save to `screenshots/` — NEVER to `attachments/` (e.g. `agent-browser screenshot screenshots/page.png`)
+- **Attachments from users**: automatically saved to `attachments/` — do not manually save screenshots there
+- **Browser sessions**: load state before browsing, save after (`agent-browser state load browser-state.json` / `agent-browser state save browser-state.json`). Skip load if the file doesn't exist yet.
 
 ## Memory
 
