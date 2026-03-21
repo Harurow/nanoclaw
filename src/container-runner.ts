@@ -210,7 +210,15 @@ function buildContainerArgs(
   containerName: string,
   isMain: boolean,
 ): string[] {
-  const args: string[] = ['run', '-i', '--rm', '--name', containerName];
+  const args: string[] = [
+    'run',
+    '-i',
+    '--rm',
+    '--name',
+    containerName,
+    '-m',
+    '2g',
+  ];
 
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
