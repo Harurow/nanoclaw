@@ -73,6 +73,19 @@ agent-browser get url             # Get current URL
 agent-browser get count ".item"   # Count matching elements
 ```
 
+### Session State (Login Persistence)
+
+Always load session state at the start and save it at the end of browser tasks.
+State is stored in `browser-state.json` in the group workspace.
+
+```bash
+agent-browser state load browser-state.json  # Load cookies/storage (before browsing)
+# ... do browser work ...
+agent-browser state save browser-state.json  # Save cookies/storage (after browsing)
+```
+
+If `browser-state.json` doesn't exist yet, skip the load step (first run).
+
 ### Screenshots & PDF
 
 ```bash

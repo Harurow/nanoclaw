@@ -223,10 +223,6 @@ function buildContainerArgs(
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
 
-  // Persist browser sessions (cookies, IndexedDB, cache) per group across runs.
-  // Using the group workspace so each group has isolated browser state.
-  args.push('-e', 'AGENT_BROWSER_PROFILE=/workspace/group/browser-profile');
-
   // Save screenshots to screenshots/ in the group workspace by default.
   args.push('-e', 'AGENT_BROWSER_SCREENSHOT_DIR=/workspace/group/screenshots');
 

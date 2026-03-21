@@ -40,6 +40,7 @@ Files you create are saved in `/workspace/group/`. Use this for notes, research,
 
 - Screenshots: always save to `screenshots/` (e.g. `agent-browser screenshot screenshots/page.png`)
 - Attachments received from users: saved automatically to `attachments/`
+- Browser sessions: load state before browsing, save after (`agent-browser state load browser-state.json` / `agent-browser state save browser-state.json`). Skip load if the file doesn't exist yet.
 
 ## Memory
 
