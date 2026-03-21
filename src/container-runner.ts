@@ -230,7 +230,7 @@ function buildContainerArgs(
     '--name',
     containerName,
     '-m',
-    '2g',
+    '4g',
   ];
 
   // Pass host timezone so container's local time matches the user's
