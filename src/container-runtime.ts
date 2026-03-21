@@ -11,11 +11,25 @@ import { logger } from './logger.js';
 /** The container runtime binary name. */
 export const CONTAINER_RUNTIME_BIN = 'container';
 
-/** Hostname containers use to reach the host machine. */
-export const CONTAINER_HOST_GATEWAY = 'host.docker.internal';
+/**
+ * Apple Container vmnet bridge IP (host side).
+ * Containers run in 192.168.64.0/24; the host is always the .1 address.
+ */
+const APPLE_CONTAINER_HOST_IP = '192.168.64.1';
+
+/**
+ * Hostname/IP containers use to reach the host machine.
+ * Apple Container: direct vmnet bridge IP (--add-host is unsupported).
+ * Docker: host.docker.internal (resolved via Docker's built-in DNS or --add-host).
+ */
+export const CONTAINER_HOST_GATEWAY =
+  CONTAINER_RUNTIME_BIN === 'container'
+    ? APPLE_CONTAINER_HOST_IP
+    : 'host.docker.internal';
 
 /**
  * Address the credential proxy binds to.
+ * Apple Container (macOS): 192.168.64.1 — the vmnet bridge visible to containers.
  * Docker Desktop (macOS): 127.0.0.1 — the VM routes host.docker.internal to loopback.
  * Docker (Linux): bind to the docker0 bridge IP so only containers can reach it,
  *   falling back to 0.0.0.0 if the interface isn't found.
@@ -24,6 +38,9 @@ export const PROXY_BIND_HOST =
   process.env.CREDENTIAL_PROXY_HOST || detectProxyBindHost();
 
 function detectProxyBindHost(): string {
+  // Apple Container uses a vmnet bridge; bind to the host-side vmnet IP
+  if (CONTAINER_RUNTIME_BIN === 'container') return APPLE_CONTAINER_HOST_IP;
+
   if (os.platform() === 'darwin') return '127.0.0.1';
 
   // WSL uses Docker Desktop (same VM routing as macOS) — loopback is correct.
@@ -42,6 +59,10 @@ function detectProxyBindHost(): string {
 
 /** CLI args needed for the container to resolve the host gateway. */
 export function hostGatewayArgs(): string[] {
+  // Apple Container: uses direct IP — no --add-host needed (unsupported)
+  if (CONTAINER_RUNTIME_BIN === 'container') {
+    return [];
+  }
   // On Linux, host.docker.internal isn't built-in — add it explicitly
   if (os.platform() === 'linux') {
     return ['--add-host=host.docker.internal:host-gateway'];
