@@ -150,6 +150,19 @@ function buildVolumeMounts(
       fs.cpSync(srcDir, dstDir, { recursive: true });
     }
   }
+
+  // Sync group-specific skills from groups/{folder}/skills/ into .claude/skills/
+  // These take precedence over global skills and are the recommended location
+  // for group-specific skills (backed up alongside other group data in groups/).
+  const groupSkillsSrc = path.join(groupDir, 'skills');
+  if (fs.existsSync(groupSkillsSrc)) {
+    for (const skillDir of fs.readdirSync(groupSkillsSrc)) {
+      const srcDir = path.join(groupSkillsSrc, skillDir);
+      if (!fs.statSync(srcDir).isDirectory()) continue;
+      const dstDir = path.join(skillsDst, skillDir);
+      fs.cpSync(srcDir, dstDir, { recursive: true });
+    }
+  }
   mounts.push({
     hostPath: groupSessionsDir,
     containerPath: '/home/node/.claude',
