@@ -2,6 +2,7 @@ import fs from 'fs';
 import https from 'https';
 import path from 'path';
 import {
+  AttachmentBuilder,
   Client,
   Events,
   GatewayIntentBits,
@@ -308,6 +309,29 @@ export class DiscordChannel implements Channel {
       logger.info({ jid, length: text.length }, 'Discord message sent');
     } catch (err) {
       logger.error({ jid, err }, 'Failed to send Discord message');
+    }
+  }
+
+  async sendFile(
+    jid: string,
+    filePath: string,
+    caption?: string,
+  ): Promise<void> {
+    if (!this.client) return;
+    try {
+      const channelId = jid.replace(/^dc:/, '');
+      const channel = await this.client.channels.fetch(channelId);
+      if (!channel || !('send' in channel)) return;
+      const attachment = new AttachmentBuilder(filePath, {
+        name: path.basename(filePath),
+      });
+      await (channel as TextChannel).send({
+        content: caption || undefined,
+        files: [attachment],
+      });
+      logger.info({ jid, filePath }, 'Discord file sent');
+    } catch (err) {
+      logger.error({ jid, filePath, err }, 'Failed to send Discord file');
     }
   }
 

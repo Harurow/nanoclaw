@@ -4,6 +4,7 @@ import path from 'path';
 import {
   ASSISTANT_NAME,
   CREDENTIAL_PROXY_PORT,
+  GROUPS_DIR,
   IDLE_TIMEOUT,
   POLL_INTERVAL,
   TIMEZONE,
@@ -231,6 +232,21 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
         if (text) {
           await channel.sendMessage(chatJid, text);
           outputSentToUser = true;
+        }
+
+        // Send local files referenced in the output as attachments (Discord etc.)
+        if (channel.sendFile) {
+          const FILE_REF_RE =
+            /\b(?:screenshots|attachments)\/[\w\-./ ]+\.(?:png|jpg|jpeg|gif|webp|pdf|mp4|mov|mp3|wav|txt|md)\b/g;
+          const seen = new Set<string>();
+          for (const [relPath] of raw.matchAll(FILE_REF_RE)) {
+            if (seen.has(relPath)) continue;
+            seen.add(relPath);
+            const hostPath = path.join(GROUPS_DIR, group.folder, relPath);
+            if (fs.existsSync(hostPath)) {
+              await channel.sendFile(chatJid, hostPath);
+            }
+          }
         }
         // Only reset idle timer on actual results, not session-update markers (result: null)
         resetIdleTimer();
